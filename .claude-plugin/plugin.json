@@ -1,22 +1,39 @@
 {
   "name": "voice-reply",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Claude Code desktop (macOS) mod: when a turn finishes in the session you are looking at, speak a short spoken-style summary of the answer aloud (edge-tts, falls back to macOS say). One 🔊 button above the prompt toggles it for all sessions.",
-  "author": { "name": "Tina0529", "url": "https://github.com/Tina0529" },
+  "author": {
+    "name": "Tina0529",
+    "url": "https://github.com/Tina0529"
+  },
   "license": "MIT",
-  "keywords": ["mod", "voice", "tts", "accessibility", "macos", "desktop"],
+  "keywords": [
+    "mod",
+    "voice",
+    "tts",
+    "accessibility",
+    "macos",
+    "desktop"
+  ],
   "userConfig": {
     "voice": {
       "type": "string",
       "title": "Voice / 声音",
-      "description": "edge-tts voice name, e.g. zh-CN-YunxiNeural (male), zh-CN-XiaoxiaoNeural (female), ja-JP-NanamiNeural.",
-      "default": "zh-CN-YunxiNeural"
+      "description": "Default voice (the 🔊 band dropdown overrides it): Xiaoxiao 晓晓 (female, warm), Xiaoyi 晓伊 (female, lively), HsiaoChen 晓臻 (female, Taiwan accent), Yunxi 云希 (male, bright), Yunyang 云扬 (male, calm).",
+      "default": "zh-CN-XiaoxiaoNeural",
+      "options": [
+        "zh-CN-XiaoxiaoNeural",
+        "zh-CN-XiaoyiNeural",
+        "zh-TW-HsiaoChenNeural",
+        "zh-CN-YunxiNeural",
+        "zh-CN-YunyangNeural"
+      ]
     },
     "rate": {
       "type": "string",
       "title": "Speed / 语速",
       "description": "edge-tts rate, e.g. +0%, +15%, -10%.",
-      "default": "+10%"
+      "default": "+25%"
     },
     "fallbackVoice": {
       "type": "string",

@@ -9,7 +9,17 @@
 - 只在**你正在看的那个 session** 回答结束时念；其他 session 跑完不出声。
 - 不念全文：先用 Haiku 把回答改写成 2–4 句口语（不超过约 120 字）。代码、路径、表格、链接不念；如果回答在等你确认，最后一句会说出要你决定什么。
 - 短回答（默认 60 字以内）直接念原文，不做摘要。
-- 声音：edge-tts（默认云希 `zh-CN-YunxiNeural`）；没装 edge-tts 或没网络时，自动改用 macOS 自带的 `say`。
+- 声音：edge-tts，默认**晓晓**，可在横条上的下拉框里换（选中会先试听一句），所有 session 同步：
+
+  | 声音 | 特点 |
+  |---|---|
+  | 晓晓 `zh-CN-XiaoxiaoNeural` | 女 · 温暖自然（默认） |
+  | 晓伊 `zh-CN-XiaoyiNeural` | 女 · 活泼 |
+  | 晓臻 `zh-TW-HsiaoChenNeural` | 女 · 台湾腔，亲切 |
+  | 云希 `zh-CN-YunxiNeural` | 男 · 年轻阳光 |
+  | 云扬 `zh-CN-YunyangNeural` | 男 · 沉稳播音腔 |
+
+- 没装 edge-tts、没网络、或 edge-tts 被微软拒绝（403）时，自动改用 macOS 自带的 `say`，并在横条上提示。edge-tts 被拒时运行 `pip install -U edge-tts` 升级即可。
 - 你一发新消息（任何 session），正在念的立刻停。
 
 ## 开关
@@ -48,8 +58,8 @@ echo '{"voice":"zh-CN-XiaoxiaoNeural","rate":"+20%"}' | claude plugin configure 
 
 | 配置项 | 默认 | 说明 |
 |---|---|---|
-| `voice` | `zh-CN-YunxiNeural` | edge-tts 声音，如 `zh-CN-XiaoxiaoNeural`、`ja-JP-NanamiNeural` |
-| `rate` | `+10%` | 语速 |
+| `voice` | `zh-CN-XiaoxiaoNeural` | 默认声音（上表 5 个之一）；横条下拉框选的优先 |
+| `rate` | `+25%` | 语速 |
 | `fallbackVoice` | `Tingting` | 离线时 macOS `say` 用的声音（`say -v '?'` 查看） |
 | `summaryModel` | `haiku` | 做摘要的模型 |
 | `minChars` | `60` | 比这个短的回答直接念原文 |

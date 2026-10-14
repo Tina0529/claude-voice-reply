@@ -4,6 +4,17 @@ import type { Register } from 'claude-code'
 const ON = 'on'               // 朗读开关
 const SPEAKING = 'speaking'   // 正在朗读：{ id, at }，用来在横条上显示「⏹ 停止」
 const SYNC_MS = 3000          // 各 session 对齐开关显示（只读一个值，不读文件）
+const ENGINE = 'engine'       // 上一次用的朗读引擎：edge | say（退回系统语音时横条上提示）
+const VOICE = 'voice'         // 横条下拉框选的声音（所有 session 共享，优先于配置项）
+// 可选声音：三个女声、两个男声（edge-tts）
+const VOICES: [string, string][] = [
+  ['zh-CN-XiaoxiaoNeural', '晓晓 · 女 · 温暖'],
+  ['zh-CN-XiaoyiNeural', '晓伊 · 女 · 活泼'],
+  ['zh-TW-HsiaoChenNeural', '晓臻 · 女 · 台湾腔'],
+  ['zh-CN-YunxiNeural', '云希 · 男 · 阳光'],
+  ['zh-CN-YunyangNeural', '云扬 · 男 · 沉稳'],
+]
+const voiceName = (v: string) => (VOICES.find(x => x[0] === v)?.[1] ?? v).split(' · ')[0]
 
 // 当前正在看的 session：桌面 App 每次切换 session 都会更新它的 lastFocusedAt
 const READ_FOCUSED = [
@@ -52,8 +63,9 @@ const PLAY = [
   'D="$HOME/.claude/voice-reply"; mkdir -p "$D"; T="$D/say-$$.txt"; M="$D/reply-$$.mp3"; cat > "$T"',
   'export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$HOME/miniconda3/bin:$PATH"',
   'E=$(command -v edge-tts)',
-  'if [ -n "$E" ] && "$E" --voice "$1" --rate="$2" -f "$T" --write-media "$M" >/dev/null 2>&1; then /usr/bin/afplay "$M"; rc=$?',
-  'else /usr/bin/say -v "$3" -f "$T" 2>/dev/null || /usr/bin/say -f "$T"; rc=$?; fi',
+  // 先合成、确认文件不为空再报引擎名并播放；edge-tts 被拒（如 403）时生成的是空文件
+  'if [ -n "$E" ] && "$E" --voice "$1" --rate="$2" -f "$T" --write-media "$M" >/dev/null 2>&1 && [ -s "$M" ]; then echo edge; /usr/bin/afplay "$M"; rc=$?',
+  'else echo say; /usr/bin/say -v "$3" -f "$T" 2>/dev/null || /usr/bin/say -f "$T"; rc=$?; fi',
   'rm -f "$T" "$M"; exit $rc',
 ].join('\n')
 const STOP = 'pkill -f "afplay $HOME/.claude/voice-reply/" ; pkill -x say ; exit 0'
@@ -67,8 +79,8 @@ async function stopSpeaking($: any) {
 export const register: Register = (on, options) => {
   const o: any = options ?? {}
   const cfg = {
-    voice: String(o.voice || 'zh-CN-YunxiNeural'),
-    rate: String(o.rate || '+10%'),
+    voice: String(o.voice || 'zh-CN-XiaoxiaoNeural'),
+    rate: String(o.rate || '+25%'),
     fallbackVoice: String(o.fallbackVoice || 'Tingting'),
     summaryModel: String(o.summaryModel || 'haiku'),
     minChars: Number(o.minChars ?? 60) || 60,
@@ -112,7 +124,9 @@ export const register: Register = (on, options) => {
       $.ui.invalidate('ui.render')
       try {
         await $.process.run(['/bin/sh', '-c', STOP], { timeoutMs: 5000 })   // 先停掉还在念的上一段
-        await $.process.run(['/bin/sh', '-c', PLAY, 'sh', cfg.voice, cfg.rate, cfg.fallbackVoice], { stdin: text, timeoutMs: 300000 })
+        const voice = String((await $.store.get(VOICE)) || cfg.voice)
+        const r = await $.process.run(['/bin/sh', '-c', PLAY, 'sh', voice, cfg.rate, cfg.fallbackVoice], { stdin: text, timeoutMs: 300000 })
+        await $.store.set(ENGINE, String(r.stdout || '').trim().split('\n')[0] || 'say')
       } catch { /* 忽略 */ }
       const cur = (await $.store.get(SPEAKING)) as any
       if (cur && cur.at === at) { await $.store.set(SPEAKING, null); $.ui.invalidate('ui.render') }
@@ -139,10 +153,12 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const below = await next(e)
     if (e.props.hasSurvey) return below
-    const { Box, Text, Button } = $.ui.resolve(e)
+    const { Box, Text, Button, Select } = $.ui.resolve(e) as any
     const isOn = (await $.store.get(ON)) === true
     shown = isOn
     const speaking = (await $.store.get(SPEAKING)) != null
+    const engine = (await $.store.get(ENGINE)) as string | undefined
+    const voice = String((await $.store.get(VOICE)) || cfg.voice)
     return (
       <Box flexDirection="column">
         {below}
@@ -154,7 +170,18 @@ export const register: Register = (on, options) => {
             $.ui.invalidate('ui.render')
           }} />
           {speaking && <Button key="voice-stop" label="⏹ 停止" onPress={() => stopSpeaking($)} />}
-          {isOn && !speaking && <Text dimColor>  只念你正在看的 session 的回答摘要</Text>}
+          {isOn && Select && <Select key="voice-pick" label="声音" value={voice}
+            options={VOICES.map(([value, label]) => ({ value, label }))}
+            onSelect={async (v: string) => {
+              await $.store.set(VOICE, v)
+              $.ui.invalidate('ui.render')
+              // 试听一句
+              void $.process.run(['/bin/sh', '-c', STOP + '; true']).then(() =>
+                $.process.run(['/bin/sh', '-c', PLAY, 'sh', v, cfg.rate, cfg.fallbackVoice], { stdin: `你好，我是${voiceName(v)}，之后由我来给你念回答摘要。`, timeoutMs: 60000 }))
+            }} />}
+          {isOn && !speaking && (engine === 'say'
+            ? <Text color="yellow">  ⚠ edge-tts 不可用，刚才用的是系统语音（升级：pip install -U edge-tts）</Text>
+            : <Text dimColor>  只念你正在看的 session 的回答摘要</Text>)}
         </Box>
       </Box>
     )
