@@ -1,6 +1,6 @@
 {
   "name": "voice-reply",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Claude Code desktop (macOS) mod: when a turn finishes in the session you are looking at, speak a short spoken-style summary of the answer aloud (edge-tts, falls back to macOS say). One 🔊 button above the prompt toggles it for all sessions.",
   "author": {
     "name": "Tina0529",

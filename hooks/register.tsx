@@ -62,9 +62,12 @@ const SUMMARY_SYSTEM = [
 const PLAY = [
   'D="$HOME/.claude/voice-reply"; mkdir -p "$D"; T="$D/say-$$.txt"; M="$D/reply-$$.mp3"; cat > "$T"',
   'export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$HOME/miniconda3/bin:$PATH"',
-  'E=$(command -v edge-tts)',
-  // 先合成、确认文件不为空再报引擎名并播放；edge-tts 被拒（如 403）时生成的是空文件
-  'if [ -n "$E" ] && "$E" --voice "$1" --rate="$2" -f "$T" --write-media "$M" >/dev/null 2>&1 && [ -s "$M" ]; then echo edge; /usr/bin/afplay "$M"; rc=$?',
+  // 机器上可能装了好几份 edge-tts（Homebrew、pip、conda…），旧版会被微软拒绝（403、生成空文件）：
+  // 按 PATH 顺序逐个试，哪个合成出非空文件就用哪个；全失败才退回系统语音
+  'ok=""; for E in $(which -a edge-tts 2>/dev/null | awk \'!seen[$0]++\'); do',
+  '  "$E" --voice "$1" --rate="$2" -f "$T" --write-media "$M" >/dev/null 2>&1 && [ -s "$M" ] && { ok=1; break; }',
+  'done',
+  'if [ -n "$ok" ]; then echo edge; /usr/bin/afplay "$M"; rc=$?',
   'else echo say; /usr/bin/say -v "$3" -f "$T" 2>/dev/null || /usr/bin/say -f "$T"; rc=$?; fi',
   'rm -f "$T" "$M"; exit $rc',
 ].join('\n')
