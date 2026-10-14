@@ -53,5 +53,7 @@
       "description": "Answers shorter than this (characters) are spoken as they are, without summarizing.",
       "default": 60
     }
-  }
+  },
+  "homepage": "https://github.com/Tina0529/claude-voice-reply",
+  "repository": "https://github.com/Tina0529/claude-voice-reply"
 }
