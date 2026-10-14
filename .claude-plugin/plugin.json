@@ -1,0 +1,40 @@
+{
+  "name": "voice-reply",
+  "version": "0.1.0",
+  "description": "Claude Code desktop (macOS) mod: when a turn finishes in the session you are looking at, speak a short spoken-style summary of the answer aloud (edge-tts, falls back to macOS say). One 🔊 button above the prompt toggles it for all sessions.",
+  "author": { "name": "Tina0529", "url": "https://github.com/Tina0529" },
+  "license": "MIT",
+  "keywords": ["mod", "voice", "tts", "accessibility", "macos", "desktop"],
+  "userConfig": {
+    "voice": {
+      "type": "string",
+      "title": "Voice / 声音",
+      "description": "edge-tts voice name, e.g. zh-CN-YunxiNeural (male), zh-CN-XiaoxiaoNeural (female), ja-JP-NanamiNeural.",
+      "default": "zh-CN-YunxiNeural"
+    },
+    "rate": {
+      "type": "string",
+      "title": "Speed / 语速",
+      "description": "edge-tts rate, e.g. +0%, +15%, -10%.",
+      "default": "+10%"
+    },
+    "fallbackVoice": {
+      "type": "string",
+      "title": "Offline voice / 离线声音",
+      "description": "macOS say voice used when edge-tts is unavailable or offline (run `say -v '?'` to list).",
+      "default": "Tingting"
+    },
+    "summaryModel": {
+      "type": "string",
+      "title": "Summary model / 摘要模型",
+      "description": "Model alias used to rewrite the answer into a short spoken summary.",
+      "default": "haiku"
+    },
+    "minChars": {
+      "type": "number",
+      "title": "Min answer length / 最短朗读长度",
+      "description": "Answers shorter than this (characters) are spoken as they are, without summarizing.",
+      "default": 60
+    }
+  }
+}

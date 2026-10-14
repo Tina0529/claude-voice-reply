@@ -1,0 +1,6 @@
+{
+  "name": "voice-reply",
+  "description": "voice-reply: speak a short summary of Claude Code's answer aloud in the session you are looking at (Claude desktop app, macOS).",
+  "owner": { "name": "Tina0529", "url": "https://github.com/Tina0529" },
+  "plugins": [{ "name": "voice-reply", "source": "./", "description": "Speak a spoken-style summary of each answer in the focused session." }]
+}
