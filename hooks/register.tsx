@@ -8,13 +8,13 @@ const ENGINE = 'engine'       // 上一次用的朗读引擎：edge | say（退�
 const VOICE = 'voice'         // 横条下拉框选的声音（所有 session 共享，优先于配置项）
 // 可选声音：三个女声、两个男声（edge-tts）
 const VOICES: [string, string][] = [
-  ['zh-CN-XiaoxiaoNeural', '晓晓 · 女 · 温暖'],
-  ['zh-CN-XiaoyiNeural', '晓伊 · 女 · 活泼'],
-  ['zh-TW-HsiaoChenNeural', '晓臻 · 女 · 台湾腔'],
-  ['zh-CN-YunxiNeural', '云希 · 男 · 阳光'],
-  ['zh-CN-YunyangNeural', '云扬 · 男 · 沉稳'],
+  ['zh-CN-XiaoxiaoNeural', '晓晓（女）'],   // 温暖
+  ['zh-CN-XiaoyiNeural', '晓伊（女）'],     // 活泼
+  ['zh-TW-HsiaoChenNeural', '晓臻（女）'],  // 台湾腔
+  ['zh-CN-YunxiNeural', '云希（男）'],      // 阳光
+  ['zh-CN-YunyangNeural', '云扬（男）'],    // 沉稳
 ]
-const voiceName = (v: string) => (VOICES.find(x => x[0] === v)?.[1] ?? v).split(' · ')[0]
+const voiceName = (v: string) => (VOICES.find(x => x[0] === v)?.[1] ?? v).replace(/（.*）$/, '')
 
 // 当前正在看的 session：桌面 App 每次切换 session 都会更新它的 lastFocusedAt
 const READ_FOCUSED = [
@@ -152,7 +152,8 @@ export const register: Register = (on, options) => {
     return { text: v ? '🔊 已开启：你正在看的 session 回答结束后，会念一段口语摘要。' : '🔇 已关闭语音朗读。' }
   })
 
-  // 横条：在其他插件（比如 session-radar）画的内容下面加一行开关，不覆盖它们
+  // 横条：紧凑的一段（🔊 朗读 · 声音 ▾），接在其他插件（比如 session-radar 的统计行右侧）后面，不覆盖它们。
+  // 说明文字不常驻，只在退回系统语音时给出黄色提示
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const below = await next(e)
     if (e.props.hasSurvey) return below
@@ -166,14 +167,14 @@ export const register: Register = (on, options) => {
       <Box flexDirection="column">
         {below}
         <Box key="voice-row" flexDirection="row">
-          <Button key="voice-toggle" label={isOn ? '🔊 朗读：开' : '🔇 朗读：关'} dimColor={!isOn} onPress={async () => {
+          <Button key="voice-toggle" label={isOn ? '🔊 朗读' : '🔇 朗读'} dimColor={!isOn} onPress={async () => {
             const v = !isOn
             await $.store.set(ON, v)
             if (!v) await stopSpeaking($)
             $.ui.invalidate('ui.render')
           }} />
           {speaking && <Button key="voice-stop" label="⏹ 停止" onPress={() => stopSpeaking($)} />}
-          {isOn && Select && <Select key="voice-pick" label="声音" value={voice}
+          {isOn && Select && <Select key="voice-pick" value={voice}
             options={VOICES.map(([value, label]) => ({ value, label }))}
             onSelect={async (v: string) => {
               await $.store.set(VOICE, v)
@@ -182,9 +183,7 @@ export const register: Register = (on, options) => {
               void $.process.run(['/bin/sh', '-c', STOP + '; true']).then(() =>
                 $.process.run(['/bin/sh', '-c', PLAY, 'sh', v, cfg.rate, cfg.fallbackVoice], { stdin: `你好，我是${voiceName(v)}，之后由我来给你念回答摘要。`, timeoutMs: 60000 }))
             }} />}
-          {isOn && !speaking && (engine === 'say'
-            ? <Text color="yellow">  ⚠ edge-tts 不可用，刚才用的是系统语音（升级：pip install -U edge-tts）</Text>
-            : <Text dimColor>  只念你正在看的 session 的回答摘要</Text>)}
+          {isOn && !speaking && engine === 'say' && <Text color="yellow"> ⚠ 用的是系统语音（pip install -U edge-tts）</Text>}
         </Box>
       </Box>
     )
